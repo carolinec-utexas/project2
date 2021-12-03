@@ -50,81 +50,308 @@ class_diag <- function(score, truth, positive, cutoff=.5){
 
 ### Introduction 
 
-Paragraph or two introducing your datasets and variables, why they are interesting to you, etc. See instructions for more information
+When the Agricultural Revolution began in the 1940s, it initiated a global switch from small-scale subsistence farming to large-scale industrialized agriculture. As a result, humans have increasingly deforested and encroached upon natural landscapes. Agricultural expansion is a leading driver of deforestation, and livestock production is particularly destructive because it requires a significant amount of land both to provide livestock space to live and to grow feed stock. In fact, cattle is a leading cause of deforestation in the Amazon, and a majority of soy production in this region is used to feed cattle instead of humans. Agricultural expansion and intensification has also had negative implications on infectious disease emergence and spread. Land-use change is a major driver of the emergence of new infectious diseases, and it can exacerbate the prevalence of endemic pathogens. Malaria cases are shown to increase when deforestation occurs due to a phenomenon called the "edge effect." When forests are fragmented (due to land-use change such as deforestation and agriculture), the wildlife-livestock-human interface can become disrupted and lead to ecosystem imbalances. Wildlife, livestock, and humans come in contact with each other more frequently and interact in abnormal ways due to increased surface area between natural and human-changed land. In areas where there is a significant forest edge, malaria incidence is shown to increase because a) an increased number of people become available food sources for mosquitoes, b) animals that usually serve as food sources to mosquitoes die or become displaced due to habitat loss, and c) forest edges provide suitable habitat for mosquitoes. 
+
+I chose to analyze 5 datasets that contained the 1) malaria cases per 100,000 people, 2) percent of land used for agriculture, 3) percent of land that is covered by forest, 4) Livestock Production Index, and the 5) Human Development Index (HDI) scores for countries between the years 1995-2005 to see if there is a notable relationship between these variables. The Livestock Production Index was a measurement created to assess the amount of animal products produced in different countries, and the values range from 32.64 to 359.72. HDI is measured on a scale from 0-1, and it takes into consideration a country's overall education, health, and standard of living. Each dataset included one of the variables listed above, the corresponding countries, and the year. The csv files for the datasets were downloaded from GapMinder. There are 926 total observations, and 101 countries were included. The binary variable is HDI scores. Countries that have HDI scores greater than 0.5 were considered to be More Developed Countries (MDCs), and countires that have HDI scores below 0.5 were considered to be Less Developed Countries (LDCs). There are 518 observations in the MDC group and 408 observations in the LDC group. I also calculated the average HDI score for each country over the 5 year period, and 53 countries are MDCs and 48 are LDCs. I expect for malaria cases, agricultural land, HDI, and livestock production to increase over time and for the forest cover to decrease. Understanding the relationship between these variables is especially important now as medical resources have shifted away from  prevention and treatment programs for endemic dieases, such as malaria, due to the reallocation of resources to combat COVID-19. 
 
 ```{R}
 library(tidyverse)
+library(dplyr)
 # read your datasets in here, e.g., with read_csv()
+agriculture<-read_csv("agriculture.csv")
+livestock <- read_csv("livestock.csv")
+forest_coverage <- read_csv("forest_coverage.csv")
+malaria_prop <- read_csv("malaria_prop.csv")
+hdi<-read_csv("hdi.csv")
 
 # if your dataset needs tidying, do so here
+#Forest: The percent of a country's total land area that is covered in forest each year
+forest_coverage1 <- forest_coverage %>% pivot_longer(c("1995":"2005"), names_to="year", values_to="forest_cover") %>% select(country, year, forest_cover)
+new_forest<- forest_coverage1 %>% unite(country, year, col="country_year", sep="_")
+
+#Malaria: malaria cases per 100,000 people each year
+malaira_prop1 <- malaria_prop %>% pivot_longer(c("1995":"2005"), names_to="year", values_to="malaria") %>% select(country, year, malaria)
+new_malaria_prop <-malaira_prop1 %>% unite(country, year, col="country_year", sep="_")
+
+#Agriculture: the percent of a country's total land area that is permanently used for crops or pasture
+agriculture1 <- agriculture %>% pivot_longer(c("1995":"2005"), names_to="year", values_to="agriculture") %>% select(country, year, agriculture)
+new_agriculture <-agriculture1 %>% unite(country, year, col="country_year", sep="_")
+
+#Livestock: An index that provides a measure of livestock production outputs (meat, milk, etc.) for a country each year
+livestock1 <- livestock %>% pivot_longer(c("1995":"2005"), names_to="year", values_to="livestock") %>% select(country, year, livestock)
+new_livestock <- livestock1 %>% unite(country, year, col="country_year", sep="_")
+
+#HDI: HDI>0.5=MDC (1), HDI<0.5=LDC (0)
+hdi1 <- hdi %>% pivot_longer(c("1995":"2005"), names_to="year", values_to="hdi") %>% select(country, year, hdi)
+new_hdi <- hdi1 %>% unite(country, year, col="country_year", sep="_")
+new_hdi$hdi<- ifelse(new_hdi$hdi>0.5, 1, 0)
+
+# your joining code
+first_join<- inner_join(new_forest, new_malaria_prop, by="country_year")
+second_join<- inner_join(new_agriculture, new_livestock, by="country_year")
+third_join <- inner_join(first_join, second_join, by="country_year")
+last_join <- inner_join(third_join, new_hdi, by="country_year")
+
+#separate country and year
+last_join<- last_join %>% separate("country_year", into=c("country", "year"), sep="_")
 
 # any other code here
+#convert variables to numeric
+last_join$year <-as.numeric(as.character(last_join$year))
+last_join$malaria <- as.numeric(sub("k", "e3", last_join$malaria, fixed= TRUE))
+
+#reorganize data
+last_join<- last_join %>% select(country, year, forest_cover, agriculture, everything())
+
+final_data <- last_join %>% na.omit()
+nrow(final_data)
 ```
 
 ### Cluster Analysis
 
 ```{R}
 library(cluster)
-# clustering code here
+library(ggplot2)
+
+#final data averages across the 5 year period
+avg_final_data<- final_data %>% group_by(country) %>% na.omit() %>% summarize(malaria = mean(malaria), livestock = mean(livestock), 
+    agriculture = mean(agriculture), forest = mean(forest_cover), hdi=mean(hdi))
+nrow(avg_final_data)
+
+# linear classifier data
+LC_data <- avg_final_data %>% mutate(avg_HDI=ifelse(hdi>0.5, 1, 0)) %>% select(-hdi)
+
+#observations per group for binary variable
+LC_data %>% filter(avg_HDI==1) %>% count()
+LC_data %>% filter(avg_HDI==0) %>% count()
+
+final_data %>% filter(hdi > 0.5) %>% count()
+final_data %>% filter(hdi < 0.5) %>% count()
+
+#clustering code here and in the following code chunk
+corr_matrix <- avg_final_data %>% select(-country) %>% cor(use = "pair")
+corr_matrix %>% as.data.frame %>% rownames_to_column %>% 
+    pivot_longer(-1) %>% ggplot(aes(rowname, name, 
+    fill = value)) + geom_tile() + geom_text(aes(label = round(value, 
+    2))) + xlab("") + ylab("") + scale_fill_gradient2(low = "red", 
+    mid = "white", high = "blue") + theme(axis.text = element_text(size = 8))
 ```
 
-Discussion of clustering here
+
+```{R}
+# Choosing the number of clusters that maximizes average silhouette width
+pam_data<- avg_final_data %>% select(-country)
+project_sil_width <- vector()
+for (i in 2:10) {
+    project_pam_fit <- pam(pam_data, k = i)
+    project_sil_width[i] <- project_pam_fit$silinfo$avg.width
+}
+
+ggplot() + geom_line(aes(x = 1:10, y = project_sil_width)) + 
+    scale_x_continuous(name = "k", breaks = 1:10)
+
+# run PAM
+project_pam <- pam_data %>% pam(k=3)
+
+# how good is cluster solution
+plot(project_pam, which=2)
+project_pam$silinfo$avg.width
+```
+
+```{R}
+#visualizing the clusters
+library(GGally)
+project_pairwise <- avg_final_data %>% mutate(cluster = as.factor(project_pam$clustering))
+
+ggpairs(project_pairwise, columns = 2:6, aes(color=cluster, alpha=0.7))
+
+```
+
+I used a loop to decide how many clusters to pick based on the largest average silhouette width. The silhouette widths were plotted for when k was equal to 2 through 10 using ggplot, and k=3 (3 clusters) had the highest average silhouette width. At k=3, the clusters are both the most cohesive and separated. The average silhouette width is 0.769, which indicates that there is a "strong structure," so the cluster solution is good. 
+
+The pairwise plots are pretty similar. However, the red cluster is very separated from the green and blue clusters in the HDI plot. This indicates that most of the countries over the 5 year period either remained an LDC or remained an MDC. Very few countries changed their status (either from LDC to MDC or vice versa). The greatest negative correlation (-0.577) is between the percent of land covered in forest and the percent of land used for agriculture. Additionally, there is a negative correlation (-0.507) between HDI and the number of malaria cases (per 100,000 people). This could indicate a couple patterns. Countries that have low HDI scores might happen to be located where malaria is most common (around the equator), and/or countries that have low HDI scores might not have their malaria cases as well under control as countries with high HDI scores. The variables with the strongest positive correlation are "forest" and "malaria;" however, the correlation is not very strong overall (0.153). The variables that show the least correlation are "agriculture" and "livestock" (-0.039), which is interesting since these variables are both related to agricultural production. Based on the cluster scatterplots, the countries in the red cluster tend to have higher HDI scores and very low rates of malaria incidence, the countries in the green cluster tend to have low HDI scores and moderates rates of malaria incidence, and the countries in the blue cluster have low HDI scores and the highest rates of malaria incidence. There do not appear to be other noteworthy trends. However, I think it is interesting that the countries with high HDI scores had slightly less land covered in forest (red cluster), and countries in the blue cluster (low HDI scores) had slightly more land used for agriculture. I think that one reason why the countries with high HDI scores might have less forest cover is they could be more urbanized than countries with low HDI scores. Additionally, one potential reason why countries with low HDI scores have more land used for agriculture is their economies might be agriculture-based, whereas countries with higher HDI scores are more likely to have industry and service-based economies. 
     
     
 ### Dimensionality Reduction with PCA
 
 ```{R}
 # PCA code here
+library(ggplot2)
+project_nums <- avg_final_data %>% select_if(is.numeric) %>% scale
+rownames(project_nums) <- avg_final_data$country
+project_pca <- princomp(project_nums, cor=T)
+
+eigval_project <- project_pca$sdev^2
+varprop=round(eigval_project/sum(eigval_project), 2)
+
+#scree plot
+ggplot()+ geom_bar(aes(y=varprop, x=1:5), stat="identity")+ xlab("") + geom_path(aes(y=varprop, x=1:5))+ geom_text(aes(x=1:5, y=varprop, label=round(varprop, 2)), vjust=1, col="white", size=5)+  scale_y_continuous(breaks=seq(0, .6, .2), labels = scales::percent)+ scale_x_continuous(breaks=1:10)
+
+#cumulative proportion of variance
+round(cumsum(eigval_project)/sum(eigval_project), 2)
+
+#eigenvalues (Kaiser's rule)
+eigval_project
+
+summary(project_pca, loadings=T)
+
 ```
 
-Discussions of PCA here. 
+``` {R}
+pca_df <- data.frame(HDI = avg_final_data$hdi, PC1 = project_pca$scores[, 1], PC2 = project_pca$scores[, 2], PC3 = project_pca$scores[, 3])
+
+ggplot(data = pca_df, aes(x = PC1, y = PC2)) + geom_point(aes(color = PC3))+ scale_color_gradient(low="blue", high="red")
+
+ggplot(data = pca_df, aes(x = PC1, y = PC2)) + geom_point(aes(color = HDI))+ scale_color_gradient(low="blue", high="red")
+
+```
+
+I made a scree plot, found the cumulative proportion of variance for the PCs, and analyzed the eigenvalues to determine how many PCs to keep. Since the cumulative proportion of variance reaches above 80% at Comp. 3 (0.83), it is probably best to keep 3 PCs. 
+
+PC1 represents Agriculture versus Forest Cover and HDI. Countries that have a higher percent of land for agriculture have lower HDI scores and have a lower percent of land covered in forest. PC2 represents Malaria Incidence versus HDI. Countries with a high incidence of malaria tend to have lower HDI scores, and countries with a low incidence of malaria tend to have higher HDI scores. PC3 represents Livestock versus HDI. Countries with higher livestock index scores tend to have lower HDI scores, and countries with lower livestock index scores tend to have higher HDI scores. 82.71% of the total variance in the dataset is explained by PC1, PC2, and PC3. I think it makes sense that countries with lower HDI scores tend to have relatively more land devoted to agriculture (PC1) and also have higher livestock index scores (PC3) since these countries are more likely to have agriculture-based economies. Additionally, since countries with higher HDI scores probably have more access to medical resources, it is makes sense that these countries also have lower rates of malaria incidence (PC2).
 
 ###  Linear Classifier
 
 ```{R}
 # linear classifier code here
+LC_data <- avg_final_data %>% mutate(avg_HDI=ifelse(hdi>0.5, 1, 0)) %>% select(-hdi)
+
+project_fit <- glm(avg_HDI=="1" ~ malaria+ livestock+ forest+ agriculture, data=LC_data, family= "binomial")
+
+prob_project <- predict(project_fit, type="response")
+class_diag(prob_project, LC_data$avg_HDI, positive="1")
+
+#confusion matrix
+table(truth= factor(LC_data$avg_HDI==1), prediction=factor(prob_project[]>.5))
+
 ```
 
 ```{R}
-# cross-validation of linear classifier here
+#cross-validation of linear classifier here
+#choose number of folds
+k=10 
+
+data<-LC_data[sample(nrow(LC_data)),] %>% select(-country)
+folds<-cut(seq(1:nrow(LC_data)),breaks=k,labels=F) 
+
+diags<-NULL
+for(i in 1:k){
+  ## Create training and test sets
+  train<-data[folds!=i,] 
+  test<-data[folds==i,]
+  truth<-test$avg_HDI
+  ## Train model on training set
+  fit<-glm(avg_HDI~ forest+ agriculture+ malaria+ livestock, data=train, family="binomial")
+  probs<-predict(fit, newdata = test, type="response")
+  ## Test model on test set (save all k results)
+  diags<-rbind(diags, class_diag(probs, truth, positive=1))
+}
+
+# average performance metrics across all folds
+summarize_all(diags, mean)
 ```
 
-Discussion here
+When I used logistic regression to predict the binary variable (HDI) from all of my numeric variables (malaria, livestock, forest, and agriculture) the AUC was 0.8479, which indicates that the model is doing okay. When I performed a k-fold CV, and the model did not predict new observations as well as indicated by the decrease in the CV AUC (AUC=0.7848). Since the AUC dropped in the CV, this indicates that there is likely overfitting. I think that is order to say that the model is doing "well" the AUC would need to be at least 0.90.  
 
 ### Non-Parametric Classifier
 
 ```{R}
-library(caret)
 # non-parametric classifier code here
+library(caret)
+knn_fit <- knn3(avg_HDI == "1" ~ malaria+ livestock+ agriculture+ forest, data = LC_data, k=10)
+
+prob_knn <- predict(knn_fit, LC_data)
+class_diag(prob_knn[, 2], LC_data$avg_HDI, positive = "1")
+
+## confusion matrix
+table(truth=factor(LC_data$avg_HDI==1), prediction=factor(prob_knn[,2]>.5))
+
 ```
 
 ```{R}
 # cross-validation of np classifier here
+k=10 
+
+data<-LC_data[sample(nrow(LC_data)),]
+folds<-cut(seq(1:nrow(LC_data)),breaks=k,labels=F)
+
+diags<-NULL
+
+for(i in 1:k){
+  ## Create training and test sets
+  train<-data[folds!=i,] 
+  test<-data[folds==i,]
+  truth<-test$avg_HDI
+  ## Train model on training set
+  fit<-knn3(avg_HDI~ malaria+ livestock+ agriculture+ forest,data=train)
+  probs<-predict(fit,newdata = test)[,2]
+  ## Test model on test set (save all k results)
+  diags<-rbind(diags,class_diag(probs,truth, positive=1))
+}
+summarize_all(diags,mean)
+
 ```
 
-Discussion
+Discussion: When I used k-nearest neighbors to predict the binary variable (HDI) from all of my numeric variables (malaria, livestock, forest, and agriculture) the AUC was 0.9041, which indicates that the model is doing pretty well. When I performed a k-fold CV, and the model did not predict new observations as well as indicated by the decrease in the CV AUC (AUC=0.8484). Since the AUC dropped in the CV, this indicates that there is likely overfitting. Compared to the linear model, the nonparametric model is doing better in terms of its cross-validation performance. Since the nonparametric model's CV AUC (0.8484) is higher than the linear model's CV AUC (0.7848), this indicates that the CV performance for the nonparametric model is better. 
 
 
 ### Regression/Numeric Prediction
 
 ```{R}
 # regression model code here
+reg_data <- avg_final_data %>% select(-country)
+fit <-lm(agriculture~., data=reg_data)
+yhat<-predict(fit)
+mean((reg_data$agriculture-yhat)^2)
+
 ```
 
 ```{R}
 # cross-validation of regression model here
+k=10
+
+data<-reg_data[sample(nrow(reg_data)),] #randomly order rows
+folds<-cut(seq(1:nrow(reg_data)),breaks=k,labels=F) #create folds
+
+diags<-NULL
+for(i in 1:k){
+  train<-data[folds!=i,]
+  test<-data[folds==i,]
+  ## Fit linear regression model to training set
+  fit<-lm(agriculture~.,data=train)
+  ## Get predictions/y-hats on test set (fold i)
+  yhat<-predict(fit,newdata=test)
+  ## Compute prediction error  (MSE) for fold i
+  diags<-mean((test$agriculture-yhat)^2) 
+}
+mean(diags)
+
 ```
 
-Discussion
+Discussion: The MSE for the overall dataset is 270.4508, which is very high. The average MSE across the k testing folds was 347.745, which is even higher and indicates that there is overfitting. 
 
 ### Python 
 
 ```{R}
-library(reticulate)
+#R code chunk
+#library(reticulate)
+#use_python("/usr/bin/python3", required = F)
+
+#infectious_disease <- "Malaria"
+
 ```
 
 ```{python}
 # python code here
+#infectious_disease <- "vector-borne pathogen"
+#print(r.infectious_disease, infectious_disease)
+
+```
+
+```{R}
+#R code chunk
+#cat(c(infectious_disease,py$infectious_disease))
+
 ```
 
 Discussion
