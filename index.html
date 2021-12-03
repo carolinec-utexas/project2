@@ -1782,8 +1782,8 @@ for (i in 1:k) {
 
 # average performance metrics across all folds
 summarize_all(diags, mean)</code></pre>
-<pre><code>##       acc    sens    spec     ppv      f1      ba     auc
-## 1 0.77182 0.92071 0.63175 0.71392 0.78648 0.77623 0.86883</code></pre>
+<pre><code>##       acc    sens  spec     ppv      f1      ba     auc
+## 1 0.77182 0.89332 0.645 0.74726 0.80711 0.76918 0.79299</code></pre>
 <p>When I used logistic regression to predict the binary variable (HDI) from all of my numeric variables (malaria, livestock, forest, and agriculture) the AUC was 0.8479, which indicates that the model is doing okay. When I performed a k-fold CV, and the model did not predict new observations as well as indicated by the decrease in the CV AUC (AUC=0.7848). Since the AUC dropped in the CV, this indicates that there is likely overfitting. I think that is order to say that the model is doing “well” the AUC would need to be at least 0.90.</p>
 </div>
 <div id="non-parametric-classifier" class="section level3">
@@ -1825,8 +1825,8 @@ for (i in 1:k) {
     diags &lt;- rbind(diags, class_diag(probs, truth, positive = 1))
 }
 summarize_all(diags, mean)</code></pre>
-<pre><code>##       acc    sens   spec     ppv      f1      ba     auc
-## 1 0.81091 0.83904 0.8031 0.81417 0.80142 0.82107 0.87364</code></pre>
+<pre><code>##       acc    sens spec     ppv      f1      ba     auc
+## 1 0.81182 0.84016 0.82 0.81334 0.81427 0.83008 0.86955</code></pre>
 <p>Discussion: When I used k-nearest neighbors to predict the binary variable (HDI) from all of my numeric variables (malaria, livestock, forest, and agriculture) the AUC was 0.9041, which indicates that the model is doing pretty well. When I performed a k-fold CV, and the model did not predict new observations as well as indicated by the decrease in the CV AUC (AUC=0.8484). Since the AUC dropped in the CV, this indicates that there is likely overfitting. Compared to the linear model, the nonparametric model is doing better in terms of its cross-validation performance. Since the nonparametric model’s CV AUC (0.8484) is higher than the linear model’s CV AUC (0.7848), this indicates that the CV performance for the nonparametric model is better.</p>
 </div>
 <div id="regressionnumeric-prediction" class="section level3">
@@ -1855,7 +1855,7 @@ for (i in 1:k) {
     diags &lt;- mean((test$agriculture - yhat)^2)
 }
 mean(diags)</code></pre>
-<pre><code>## [1] 230.4194</code></pre>
+<pre><code>## [1] 236.1721</code></pre>
 <p>Discussion: The MSE for the overall dataset is 270.4508, which is very high. The average MSE across the k testing folds was 347.745, which is even higher and indicates that there is overfitting.</p>
 </div>
 <div id="python" class="section level3">
