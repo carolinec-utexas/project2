@@ -1782,8 +1782,8 @@ for (i in 1:k) {
 
 # average performance metrics across all folds
 summarize_all(diags, mean)</code></pre>
-<pre><code>##       acc    sens  spec     ppv      f1      ba     auc
-## 1 0.77182 0.89332 0.645 0.74726 0.80711 0.76918 0.79299</code></pre>
+<pre><code>##       acc    sens    spec    ppv      f1     ba     auc
+## 1 0.77364 0.92166 0.61453 0.7425 0.81259 0.7681 0.85824</code></pre>
 <p>When I used logistic regression to predict the binary variable (HDI) from all of my numeric variables (malaria, livestock, forest, and agriculture) the AUC was 0.8479, which indicates that the model is doing okay. When I performed a k-fold CV, and the model did not predict new observations as well as indicated by the decrease in the CV AUC (AUC=0.7848). Since the AUC dropped in the CV, this indicates that there is likely overfitting. I think that is order to say that the model is doing “well” the AUC would need to be at least 0.90.</p>
 </div>
 <div id="non-parametric-classifier" class="section level3">
@@ -1825,8 +1825,8 @@ for (i in 1:k) {
     diags &lt;- rbind(diags, class_diag(probs, truth, positive = 1))
 }
 summarize_all(diags, mean)</code></pre>
-<pre><code>##       acc    sens spec     ppv      f1      ba     auc
-## 1 0.81182 0.84016 0.82 0.81334 0.81427 0.83008 0.86955</code></pre>
+<pre><code>##       acc    sens    spec  ppv      f1      ba     auc
+## 1 0.79545 0.81286 0.77404 0.82 0.80233 0.79346 0.85401</code></pre>
 <p>Discussion: When I used k-nearest neighbors to predict the binary variable (HDI) from all of my numeric variables (malaria, livestock, forest, and agriculture) the AUC was 0.9041, which indicates that the model is doing pretty well. When I performed a k-fold CV, and the model did not predict new observations as well as indicated by the decrease in the CV AUC (AUC=0.8484). Since the AUC dropped in the CV, this indicates that there is likely overfitting. Compared to the linear model, the nonparametric model is doing better in terms of its cross-validation performance. Since the nonparametric model’s CV AUC (0.8484) is higher than the linear model’s CV AUC (0.7848), this indicates that the CV performance for the nonparametric model is better.</p>
 </div>
 <div id="regressionnumeric-prediction" class="section level3">
@@ -1855,25 +1855,28 @@ for (i in 1:k) {
     diags &lt;- mean((test$agriculture - yhat)^2)
 }
 mean(diags)</code></pre>
-<pre><code>## [1] 236.1721</code></pre>
+<pre><code>## [1] 264.3088</code></pre>
 <p>Discussion: The MSE for the overall dataset is 270.4508, which is very high. The average MSE across the k testing folds was 347.745, which is even higher and indicates that there is overfitting.</p>
 </div>
 <div id="python" class="section level3">
 <h3>Python</h3>
-<pre class="r"><code># R code chunk library(reticulate)
-# use_python(&#39;/usr/bin/python3&#39;, required = F)
-
-# infectious_disease &lt;- &#39;Malaria&#39;</code></pre>
-<pre class="python"><code># python code here
-#infectious_disease &lt;- &quot;vector-borne pathogen&quot;
-#print(r.infectious_disease, infectious_disease)</code></pre>
 <pre class="r"><code># R code chunk
-# cat(c(infectious_disease,py$infectious_disease))</code></pre>
-<p>Discussion</p>
+library(reticulate)
+use_python(&quot;/usr/bin/python3&quot;, required = F)
+
+pathogen &lt;- &quot;Plasmodium&quot;</code></pre>
+<pre class="python"><code># python code here
+pathogen= &quot;knowlesi&quot;
+print(r.pathogen, pathogen)</code></pre>
+<pre><code>## Plasmodium knowlesi</code></pre>
+<pre class="r"><code># R code chunk
+cat(c(pathogen, py$pathogen))</code></pre>
+<pre><code>## Plasmodium knowlesi</code></pre>
+<p>Discussion: In the python code chunk, I created an object called “pathogen” that prints “knowlesi,” and in the R code chunk, I created another object called “pathogen” that prints “Plasmodium.” Reticulate was used to share the objects between R and python. In the python code chunk, “r.pathogen” shared the R object with python, and in the R code chunk, “py$pathogen” was used to share the python object with R. Plasmodium knowlesi is a species of malaria parasite that is unique because it is zoonotic (i.e. it can be transmitted between animals and humans).</p>
 </div>
 <div id="concluding-remarks" class="section level3">
 <h3>Concluding Remarks</h3>
-<p>Include concluding remarks here, if any</p>
+<p>In this project, it was interesting to compare the CV AUCs of the different types of models and to determine which kind of model fit the data best. In future studies, it could be interesting to compare the livestock, forest, and agriculture data to the incidence of zoonotic infectious diseases, such as Nipah and Sars-CoV-2 because these pathogens have well-documented relationships with agricultural expansion and deforestation. Additionally, many noteworthy zoonoses (Ebola, SARS, SARS-CoV-2, Hendra, Nipah, MERS, etc.) likely use bats as reservoir hosts. Therefore, it would be interesting to conduct the above analyses that included data on the a) distribution of these bat species and b) percent of land that serves as suitable bat habitat. I am curious to know how these variables change over time. Also, it could be interesting to see how well this data can be used to predict the incidence of zoonoses. These models might have useful applications in predicting where future outbreaks of zoonoses are most likely to occur.</p>
 </div>
 </div>
 </div>

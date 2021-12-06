@@ -334,31 +334,30 @@ Discussion: The MSE for the overall dataset is 270.4508, which is very high. The
 
 ```{R}
 #R code chunk
-#library(reticulate)
-#use_python("/usr/bin/python3", required = F)
+library(reticulate)
+use_python("/usr/bin/python3", required = F)
 
-#infectious_disease <- "Malaria"
+pathogen <- "Plasmodium"
 
 ```
 
 ```{python}
 # python code here
-#infectious_disease <- "vector-borne pathogen"
-#print(r.infectious_disease, infectious_disease)
-
+pathogen= "knowlesi"
+print(r.pathogen, pathogen)
 ```
 
 ```{R}
 #R code chunk
-#cat(c(infectious_disease,py$infectious_disease))
+cat(c(pathogen,py$pathogen))
 
 ```
 
-Discussion
+Discussion: In the python code chunk, I created an object called "pathogen" that prints "knowlesi," and in the R code chunk, I created another object called "pathogen" that prints "Plasmodium." Reticulate was used to share the objects between R and python. In the python code chunk, "r.pathogen" shared the R object with python, and in the R code chunk, "py$pathogen" was used to share the python object with R. Plasmodium knowlesi is a species of malaria parasite that is unique because it is zoonotic (i.e. it can be transmitted between animals and humans).
 
 ### Concluding Remarks
 
-Include concluding remarks here, if any
+In this project, it was interesting to compare the CV AUCs of the different types of models and to determine which kind of model fit the data best. In future studies, it could be interesting to compare the livestock, forest, and agriculture data to the incidence of zoonotic infectious diseases, such as Nipah and Sars-CoV-2 because these pathogens have well-documented relationships with agricultural expansion and deforestation. Additionally, many noteworthy zoonoses (Ebola, SARS, SARS-CoV-2, Hendra, Nipah, MERS, etc.) likely use bats as reservoir hosts. Therefore, it would be interesting to conduct the above analyses that included data on the a) distribution of these bat species and b) percent of land that serves as suitable bat habitat. I am curious to know how these variables change over time. Also, it could be interesting to see how well this data can be used to predict the incidence of zoonoses. These models might have useful applications in predicting where future outbreaks of zoonoses are most likely to occur.
 
 
 
