@@ -1538,9 +1538,10 @@ div.tocify {
 <div id="introduction" class="section level3">
 <h3>Introduction</h3>
 <p>When the Agricultural Revolution began in the 1940s, it initiated a global switch from small-scale subsistence farming to large-scale industrialized agriculture. As a result, humans have increasingly deforested and encroached upon natural landscapes. Agricultural expansion is a leading driver of deforestation, and livestock production is particularly destructive because it requires a significant amount of land both to provide livestock space to live and to grow feed stock. In fact, cattle is a leading cause of deforestation in the Amazon, and a majority of soy production in this region is used to feed cattle instead of humans. Agricultural expansion and intensification has also had negative implications on infectious disease emergence and spread. Land-use change is a major driver of the emergence of new infectious diseases, and it can exacerbate the prevalence of endemic pathogens. Malaria cases are shown to increase when deforestation occurs due to a phenomenon called the “edge effect.” When forests are fragmented (due to land-use change such as deforestation and agriculture), the wildlife-livestock-human interface can become disrupted and lead to ecosystem imbalances. Wildlife, livestock, and humans come in contact with each other more frequently and interact in abnormal ways due to increased surface area between natural and human-changed land. In areas where there is a significant forest edge, malaria incidence is shown to increase because a) an increased number of people become available food sources for mosquitoes, b) animals that usually serve as food sources to mosquitoes die or become displaced due to habitat loss, and c) forest edges provide suitable habitat for mosquitoes.</p>
-<p>I chose to analyze 5 datasets that contained the 1) malaria cases per 100,000 people, 2) percent of land used for agriculture, 3) percent of land that is covered by forest, 4) Livestock Production Index, and the 5) Human Development Index (HDI) scores for countries between the years 1995-2005 to see if there is a notable relationship between these variables. The Livestock Production Index was a measurement created to assess the amount of animal products produced in different countries, and the values range from 32.64 to 359.72. HDI is measured on a scale from 0-1, and it takes into consideration a country’s overall education, health, and standard of living. Each dataset included one of the variables listed above, the corresponding countries, and the year. The csv files for the datasets were downloaded from GapMinder. There are 926 total observations, and 101 countries were included. The binary variable is HDI scores. Countries that have HDI scores greater than 0.5 were considered to be More Developed Countries (MDCs), and countires that have HDI scores below 0.5 were considered to be Less Developed Countries (LDCs). There are 518 observations in the MDC group and 408 observations in the LDC group. I also calculated the average HDI score for each country over the 5 year period, and 53 countries are MDCs and 48 are LDCs. I expect for malaria cases, agricultural land, HDI, and livestock production to increase over time and for the forest cover to decrease. Understanding the relationship between these variables is especially important now as medical resources have shifted away from prevention and treatment programs for endemic dieases, such as malaria, due to the reallocation of resources to combat COVID-19.</p>
+<p>I chose to analyze 5 datasets that contained the 1) malaria cases per 100,000 people, 2) percent of land used for agriculture, 3) percent of land that is covered by forest, 4) Livestock Production Index, and the 5) Human Development Index (HDI) scores for countries between the years 1995-2005 to see if there is a notable relationship between these variables. Malaria, agriculture, forest cover, livestock, and year are numeric variables. HDI is a binary variable, and country is a categorical variable. The Livestock Production Index was a measurement created to assess the amount of animal products produced in different countries, and the values range from 32.64 to 359.72. HDI is measured on a scale from 0-1, and it takes into consideration a country’s overall education, health, and standard of living. Each dataset included one of the numeric/binary variables listed above, the corresponding countries, and the year. The csv files for the datasets were downloaded from GapMinder. There are 926 total observations, and 101 countries were included. Countries that have HDI scores greater than 0.5 were considered to be More Developed Countries (MDCs), and countries that have HDI scores below 0.5 were considered to be Less Developed Countries (LDCs). There are 518 observations in the MDC group and 408 observations in the LDC group. I also calculated the average HDI score for each country over the 5 year period, and 53 countries are MDCs and 48 are LDCs. I expect for malaria cases, agricultural land, HDI, and livestock production to increase over time and for the forest cover to decrease. Understanding the relationship between these variables is especially important now as medical resources have shifted away from prevention and treatment programs for endemic dieases, such as malaria, due to the reallocation of resources to combat COVID-19.</p>
 <pre class="r"><code>library(tidyverse)
 library(dplyr)
+
 # read your datasets in here, e.g., with read_csv()
 agriculture &lt;- read_csv(&quot;agriculture.csv&quot;)
 livestock &lt;- read_csv(&quot;livestock.csv&quot;)
@@ -1580,7 +1581,8 @@ livestock1 &lt;- livestock %&gt;% pivot_longer(c(&quot;1995&quot;:&quot;2005&quo
 new_livestock &lt;- livestock1 %&gt;% unite(country, year, col = &quot;country_year&quot;, 
     sep = &quot;_&quot;)
 
-# HDI: HDI&gt;0.5=MDC (1), HDI&lt;0.5=LDC (0)
+# HDI: A measure of a country&#39;s development; HDI&gt;0.5=MDC (1),
+# HDI&lt;0.5=LDC (0)
 hdi1 &lt;- hdi %&gt;% pivot_longer(c(&quot;1995&quot;:&quot;2005&quot;), names_to = &quot;year&quot;, 
     values_to = &quot;hdi&quot;) %&gt;% select(country, year, hdi)
 new_hdi &lt;- hdi1 %&gt;% unite(country, year, col = &quot;country_year&quot;, 
@@ -1609,13 +1611,7 @@ last_join &lt;- last_join %&gt;% select(country, year, forest_cover,
 final_data &lt;- last_join %&gt;% na.omit()
 nrow(final_data)</code></pre>
 <pre><code>## [1] 926</code></pre>
-</div>
-<div id="cluster-analysis" class="section level3">
-<h3>Cluster Analysis</h3>
-<pre class="r"><code>library(cluster)
-library(ggplot2)
-
-# final data averages across the 5 year period
+<pre class="r"><code># final data averages across the 5 year period
 avg_final_data &lt;- final_data %&gt;% group_by(country) %&gt;% na.omit() %&gt;% 
     summarize(malaria = mean(malaria), livestock = mean(livestock), 
         agriculture = mean(agriculture), forest = mean(forest_cover), 
@@ -1647,7 +1643,13 @@ LC_data %&gt;% filter(avg_HDI == 1) %&gt;% count()</code></pre>
 ##       n
 ##   &lt;int&gt;
 ## 1   408</code></pre>
-<pre class="r"><code># clustering code here and in the following code chunk
+</div>
+<div id="cluster-analysis" class="section level3">
+<h3>Cluster Analysis</h3>
+<pre class="r"><code>library(cluster)
+library(ggplot2)
+
+# clustering code here and in the following code chunk
 corr_matrix &lt;- avg_final_data %&gt;% select(-country) %&gt;% cor(use = &quot;pair&quot;)
 corr_matrix %&gt;% as.data.frame %&gt;% rownames_to_column %&gt;% pivot_longer(-1) %&gt;% 
     ggplot(aes(rowname, name, fill = value)) + geom_tile() + 
@@ -1782,8 +1784,8 @@ for (i in 1:k) {
 
 # average performance metrics across all folds
 summarize_all(diags, mean)</code></pre>
-<pre><code>##       acc    sens    spec    ppv      f1      ba     auc
-## 1 0.75091 0.88722 0.69083 0.7319 0.76607 0.78903 0.80233</code></pre>
+<pre><code>##       acc    sens   spec     ppv      f1      ba     auc
+## 1 0.78364 0.92722 0.6525 0.72583 0.79848 0.78986 0.83495</code></pre>
 <p>When I used logistic regression to predict the binary variable (HDI) from all of my numeric variables (malaria, livestock, forest, and agriculture) the AUC was 0.8479, which indicates that the model is doing okay. When I performed a k-fold CV, and the model did not predict new observations as well as indicated by the decrease in the CV AUC (AUC=0.7848). Since the AUC dropped in the CV, this indicates that there is likely overfitting. I think that is order to say that the model is doing “well” the AUC would need to be at least 0.90.</p>
 </div>
 <div id="non-parametric-classifier" class="section level3">
@@ -1825,8 +1827,8 @@ for (i in 1:k) {
     diags &lt;- rbind(diags, class_diag(probs, truth, positive = 1))
 }
 summarize_all(diags, mean)</code></pre>
-<pre><code>##       acc    sens    spec     ppv      f1      ba     auc
-## 1 0.82364 0.83977 0.81999 0.83881 0.82615 0.82988 0.87153</code></pre>
+<pre><code>##       acc    sens    spec     ppv  f1      ba     auc
+## 1 0.77182 0.73035 0.75834 0.73154 NaN 0.74434 0.81613</code></pre>
 <p>Discussion: When I used k-nearest neighbors to predict the binary variable (HDI) from all of my numeric variables (malaria, livestock, forest, and agriculture) the AUC was 0.9041, which indicates that the model is doing pretty well. When I performed a k-fold CV, and the model did not predict new observations as well as indicated by the decrease in the CV AUC (AUC=0.8484). Since the AUC dropped in the CV, this indicates that there is likely overfitting. Compared to the linear model, the nonparametric model is doing better in terms of its cross-validation performance. Since the nonparametric model’s CV AUC (0.8484) is higher than the linear model’s CV AUC (0.7848), this indicates that the CV performance for the nonparametric model is better.</p>
 </div>
 <div id="regressionnumeric-prediction" class="section level3">
@@ -1855,7 +1857,7 @@ for (i in 1:k) {
     diags &lt;- mean((test$agriculture - yhat)^2)
 }
 mean(diags)</code></pre>
-<pre><code>## [1] 198.9081</code></pre>
+<pre><code>## [1] 229.6968</code></pre>
 <p>Discussion: The MSE for the overall dataset is 270.4508, which is very high. The average MSE across the k testing folds was 347.745, which is even higher and indicates that there is overfitting.</p>
 </div>
 <div id="python" class="section level3">
