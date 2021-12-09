@@ -230,13 +230,16 @@ prob_project <- predict(project_fit, type="response")
 class_diag(prob_project, LC_data$avg_HDI, positive="1")
 
 #confusion matrix
-table(truth= factor(LC_data$avg_HDI==1), prediction=factor(prob_project[]>.5))
+table(truth=LC_data$avg_HDI==1, prediction=prob_project>.5)
 
 ```
 
 ```{R}
 #cross-validation of linear classifier here
-#choose number of folds
+library(caret)
+set.seed(1234)
+
+#choosing the number of folds
 k=10 
 
 data<-LC_data[sample(nrow(LC_data)),] %>% select(-country)
@@ -244,40 +247,43 @@ folds<-cut(seq(1:nrow(LC_data)),breaks=k,labels=F)
 
 diags<-NULL
 for(i in 1:k){
-  ## Create training and test sets
+  #Creating training and test sets
   train<-data[folds!=i,] 
   test<-data[folds==i,]
   truth<-test$avg_HDI
-  ## Train model on training set
+  #Training model on training set
   fit<-glm(avg_HDI~ forest+ agriculture+ malaria+ livestock, data=train, family="binomial")
+  #Testing model on test set (save all k results)
   probs<-predict(fit, newdata = test, type="response")
-  ## Test model on test set (save all k results)
+  #Get diagnostics
   diags<-rbind(diags, class_diag(probs, truth, positive=1))
 }
 
-# average performance metrics across all folds
+# average diagnostics across all k folds
 summarize_all(diags, mean)
 ```
 
-When I used logistic regression to predict the binary variable (HDI) from all of my numeric variables (malaria, livestock, forest, and agriculture) the AUC was 0.8479, which indicates that the model is doing okay. When I performed a k-fold CV, and the model did not predict new observations as well as indicated by the decrease in the CV AUC (AUC=0.7848). Since the AUC dropped in the CV, this indicates that there is likely overfitting. I think that is order to say that the model is doing "well" the AUC would need to be at least 0.90.  
+When I used logistic regression to predict the binary variable (HDI) from all of my numeric variables (malaria, livestock, forest, and agriculture) the AUC was 0.8479, which indicates that the model is doing pretty good. When I performed a k-fold CV, the model did not predict new observations as well as indicated by the decrease in the CV AUC (AUC=0.8130). Since the AUC dropped in the CV, this indicates that there is likely overfitting. I think that is order to say that the model is doing "great" the AUC would need to be at least 0.90.  
 
 ### Non-Parametric Classifier
 
 ```{R}
 # non-parametric classifier code here
 library(caret)
-knn_fit <- knn3(avg_HDI == "1" ~ malaria+ livestock+ agriculture+ forest, data = LC_data, k=10)
+knn_fit <- knn3(avg_HDI == "1" ~ malaria+ livestock+ agriculture+ forest, data = LC_data)
 
-prob_knn <- predict(knn_fit, LC_data)
-class_diag(prob_knn[, 2], LC_data$avg_HDI, positive = "1")
+prob_knn <- predict(knn_fit, LC_data)[,2]
+class_diag(prob_knn, LC_data$avg_HDI, positive = "1")
 
 ## confusion matrix
-table(truth=factor(LC_data$avg_HDI==1), prediction=factor(prob_knn[,2]>.5))
+table(truth=LC_data$avg_HDI==1, prediction=prob_knn>.5)
 
 ```
 
 ```{R}
 # cross-validation of np classifier here
+set.seed(1234)
+
 k=10 
 
 data<-LC_data[sample(nrow(LC_data)),]
@@ -286,21 +292,23 @@ folds<-cut(seq(1:nrow(LC_data)),breaks=k,labels=F)
 diags<-NULL
 
 for(i in 1:k){
-  ## Create training and test sets
+  #Create training and test sets
   train<-data[folds!=i,] 
   test<-data[folds==i,]
   truth<-test$avg_HDI
-  ## Train model on training set
+  #Train model on training set
   fit<-knn3(avg_HDI~ malaria+ livestock+ agriculture+ forest,data=train)
+  #Test model on test set (save all k results)
   probs<-predict(fit,newdata = test)[,2]
-  ## Test model on test set (save all k results)
-  diags<-rbind(diags,class_diag(probs,truth, positive=1))
+  #Get diagnostics
+  diags<-rbind(diags, class_diag(probs, truth, positive=1))
 }
+
 summarize_all(diags,mean)
 
 ```
 
-Discussion: When I used k-nearest neighbors to predict the binary variable (HDI) from all of my numeric variables (malaria, livestock, forest, and agriculture) the AUC was 0.9041, which indicates that the model is doing pretty well. When I performed a k-fold CV, and the model did not predict new observations as well as indicated by the decrease in the CV AUC (AUC=0.8484). Since the AUC dropped in the CV, this indicates that there is likely overfitting. Compared to the linear model, the nonparametric model is doing better in terms of its cross-validation performance. Since the nonparametric model's CV AUC (0.8484) is higher than the linear model's CV AUC (0.7848), this indicates that the CV performance for the nonparametric model is better. 
+Discussion: When I used k-nearest neighbors to predict the binary variable (HDI) from all of my numeric variables (malaria, livestock, forest, and agriculture) the AUC was 0.922, which indicates that the model is doing very well. When I performed a k-fold CV, the model did not predict new observations as well as indicated by the decrease in the CV AUC (AUC=0.8394). Since the AUC dropped in the CV, this indicates that there is likely overfitting. Compared to the linear model, the nonparametric model is doing better in terms of its cross-validation performance. Since the nonparametric model's CV AUC (0.8394) is higher than the linear model's CV AUC (0.8130), this indicates that the CV performance for the nonparametric model is better. 
 
 
 ### Regression/Numeric Prediction
@@ -310,33 +318,41 @@ Discussion: When I used k-nearest neighbors to predict the binary variable (HDI)
 reg_data <- avg_final_data %>% select(-country)
 fit <-lm(agriculture~., data=reg_data)
 yhat<-predict(fit)
+
+#MSE
 mean((reg_data$agriculture-yhat)^2)
 
 ```
 
 ```{R}
 # cross-validation of regression model here
+set.seed(1234)
+
 k=10
 
-data<-reg_data[sample(nrow(reg_data)),] #randomly order rows
-folds<-cut(seq(1:nrow(reg_data)),breaks=k,labels=F) #create folds
+#randomly order rows
+data<-reg_data[sample(nrow(reg_data)),]
+#create folds
+folds<-cut(seq(1:nrow(reg_data)),breaks=k,labels=F)
 
 diags<-NULL
 for(i in 1:k){
   train<-data[folds!=i,]
   test<-data[folds==i,]
-  ## Fit linear regression model to training set
+  #Fit linear regression model to training set
   fit<-lm(agriculture~.,data=train)
-  ## Get predictions/y-hats on test set (fold i)
+  #Get predictions/y-hats on test set (fold i)
   yhat<-predict(fit,newdata=test)
-  ## Compute prediction error  (MSE) for fold i
+  #Compute prediction error  (MSE) for fold i
   diags<-mean((test$agriculture-yhat)^2) 
 }
+
+#average MSE across all folds
 mean(diags)
 
 ```
 
-Discussion: The MSE for the overall dataset is 270.4508, which is very high. The average MSE across the k testing folds was 347.745, which is even higher and indicates that there is overfitting. 
+Discussion: The MSE for the overall dataset is 270.4508, which is very high. The average MSE across the k testing folds was 287.0851, which is even higher and indicates that there is overfitting. (Since the MSE is higher in the CV, this indicates that there is likely overfitting.)
 
 ### Python 
 
