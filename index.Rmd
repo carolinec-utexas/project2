@@ -260,7 +260,7 @@ for(i in 1:k){
 summarize_all(diags, mean)
 ```
 
-When I used logistic regression to predict the binary variable (HDI) from all of my numeric variables (malaria, livestock, forest, and agriculture) the AUC was 0.8479, which indicates that the model is doing pretty good. When I performed a k-fold CV, the CV AUC was 0.8130, so the model did okay. However, the model did not predict new observations as well as indicated by the decrease in the CV AUC. Since the AUC dropped in the CV, this indicates that there is likely overfitting. I think that is order to say that the model is doing "great" the AUC would need to be at least 0.90.  
+When I used logistic regression to predict the binary variable (HDI) from all of my numeric variables (malaria, livestock, forest, and agriculture) the AUC was 0.8479, which indicates that the model is doing pretty good. When I performed a k-fold CV, the CV AUC was 0.8130, which indicates the model is doing okay but not as well. The model did not predict new observations as well as indicated by the decrease in the CV AUC. Since the AUC dropped in the CV, this indicates that there is likely overfitting. I think that is order to say that the model is doing "great" the AUC would need to be at least 0.90.  
 
 ### Non-Parametric Classifier
 
@@ -305,7 +305,7 @@ summarize_all(diags,mean)
 
 ```
 
-When I used k-nearest neighbors to predict the binary variable (HDI) from all of my numeric variables (malaria, livestock, forest, and agriculture) the AUC was 0.922, which indicates that the model is doing very well. When I performed a k-fold CV, the CV AUC was 0.8394, which indicates that model did pretty good. However, the model did not predict new observations as well as indicated by the decrease in the CV AUC. Since the AUC dropped in the CV, this indicates that there is likely overfitting. Compared to the linear model, the nonparametric model is doing better in terms of its cross-validation performance. Since the nonparametric model's CV AUC (0.8394) is higher than the linear model's CV AUC (0.8130), this indicates that the CV performance for the nonparametric model is better. 
+When I used k-nearest neighbors to predict the binary variable (HDI) from all of my numeric variables (malaria, livestock, forest, and agriculture) the AUC was 0.922, which indicates that the model is doing very well. When I performed a k-fold CV, the CV AUC was 0.8394, which indicates that model did pretty good but not as well. The model did not predict new observations as well as indicated by the decrease in the CV AUC. Since the AUC dropped in the CV, this indicates that there is likely overfitting. Compared to the linear model, the nonparametric model is doing better in terms of its cross-validation performance. Since the nonparametric model's CV AUC (0.8394) is higher than the linear model's CV AUC (0.8130), this indicates that the CV performance for the nonparametric model is better. 
 
 
 ### Regression/Numeric Prediction
